@@ -1,0 +1,8 @@
+#!/sbin/openrc-run
+
+description='Battery charge history logger'
+
+command='/usr/bin/charge-log'
+command_args='daemon'
+command_background='true'
+pidfile="run/${RC_SVCNAME}.pid"

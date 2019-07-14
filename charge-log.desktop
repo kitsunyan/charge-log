@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Battery Charge History
+Comment=Show plots of energy and power versus time
+Icon=battery
+Exec=charge-log plot
+StartupNotify=false
+Terminal=false
+Categories=Utility;
