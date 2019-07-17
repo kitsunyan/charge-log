@@ -1,0 +1,75 @@
+CC = gcc
+CFLAGS =
+LDFLAGS = -Wl,--as-needed
+DESTDIR =
+
+ENABLE_SYSTEMD =
+ENABLE_OPENRC =
+
+BINDIR =
+SYSCONFDIR =
+DATADIR =
+RUNSTATEDIR =
+UNITDIR =
+
+GTK_CFLAGS =
+GTK_LDFLAGS =
+
+EXTRA_CFLAGS = \
+	-Wall -Wextra -Wno-unused-parameter \
+	-DRUNSTATEDIR=\"$(RUNSTATEDIR)\" \
+	$(GTK_CFLAGS)
+EXTRA_LDFLAGS = \
+	-lm \
+	$(GTK_LDFLAGS)
+
+.PHONY: all clean install
+
+TARGETS = \
+	charge-log-daemon \
+	charge-log-plot
+ifeq ($(ENABLE_SYSTEMD), 1)
+TARGETS += \
+	charge-log.service
+endif
+ifeq ($(ENABLE_OPENRC), 1)
+TARGETS += \
+	charge-log.openrc
+endif
+
+all: $(TARGETS)
+
+charge-log.service: charge-log.service.in
+	sed -e "s,%BINDIR%,$(BINDIR)," $< > $@
+
+charge-log.openrc: charge-log.openrc.in
+	sed -e "s,%BINDIR%,$(BINDIR)," \
+	-e "s,%RUNSTATEDIR%,$(RUNSTATEDIR)," $< > $@
+
+%.o: %.c common.h
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -o $@ -c $<
+
+charge-log-daemon: daemon.o common.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(EXTRA_LDFLAGS)
+
+charge-log-plot: plot.o common.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(EXTRA_LDFLAGS)
+
+clean:
+	rm -rfv \
+	*.o \
+	charge-log-daemon \
+	charge-log-plot \
+	charge-log.openrc \
+	charge-log.service
+
+install: all
+	install -Dm755 charge-log-daemon $(DESTDIR)$(BINDIR)/charge-log-daemon
+	install -Dm755 charge-log-plot $(DESTDIR)$(BINDIR)/charge-log-plot
+	install -Dm644 charge-log.desktop $(DESTDIR)$(DATADIR)/applications/charge-log.desktop
+ifeq ($(ENABLE_SYSTEMD), 1)
+	install -Dm644 charge-log.service $(DESTDIR)$(UNITDIR)/charge-log.service
+endif
+ifeq ($(ENABLE_OPENRC), 1)
+	install -Dm755 charge-log.openrc $(DESTDIR)$(SYSCONFDIR)/init.d/charge-log
+endif

@@ -1,0 +1,9 @@
+[Unit]
+Description=Battery Charge History Logger
+
+[Service]
+ExecStart=%BINDIR%/charge-log-daemon
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

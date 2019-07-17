@@ -1,3 +1,6 @@
 charge-log-daemon
 charge-log-plot
+charge-log.openrc
+charge-log.service
+Makefile
 *.o

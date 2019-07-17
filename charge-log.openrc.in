@@ -2,6 +2,6 @@
 
 description='Battery charge history logger'
 
-command='/usr/bin/charge-log-daemon'
+command='%BINDIR%/charge-log-daemon'
 command_background='true'
-pidfile="run/${RC_SVCNAME}.pid"
+pidfile="%RUNSTATEDIR%/${RC_SVCNAME}.pid"

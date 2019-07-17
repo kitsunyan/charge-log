@@ -1,0 +1,103 @@
+#!/bin/sh
+
+arg() {
+  local a n s r
+  s="$1"
+  r="$2"
+  shift 2
+  for a in "$@"; do
+    n="${a%%=*}"
+    [ "$n" = "--$s" ] && r="${a#*=}"
+  done
+  echo "$r"
+}
+
+enable() {
+  local a n s r
+  s="$1"
+  r=false
+  shift
+  for a in "$@"; do
+    n="${a#--enable-}"
+    [ "$n" = "$s" ] && r=true
+    n="${a#--disable-}"
+    [ "$n" = "$s" ] && r=false
+  done
+  echo "$r"
+}
+
+pkgconfig="`arg pkgconfig pkg-config "$@"`"
+sysconfdir="`arg sysconfdir /etc "$@"`"
+bindir="`arg bindir /usr/bin "$@"`"
+datadir="`arg datadir /usr/share "$@"`"
+runstatedir="`arg runstatedir /run "$@"`"
+
+enable_systemd="`enable systemd false "$@"`"
+enable_openrc="`enable openrc false "$@"`"
+enable_gtk2="`enable gtk2 false "$@"`"
+enable_gtk3="`enable gtk3 false "$@"`"
+
+unitdir=
+"$enable_systemd" && {
+  unitdir="`arg unitdir '' "$@"`"
+  [ -z "$unitdir" ] && unitdir="`"$pkgconfig" systemd --variable=systemdsystemunitdir`"
+  [ -z "$unitdir" ] && {
+    echo 'Failed to configure unitdir' >&2
+    exit 1
+  }
+}
+
+! "$enable_gtk2" && ! "$enable_gtk3" && {
+  echo 'Either GTK+ 2 or GTK+ 3 should be enabled' >&2
+  exit 1
+}
+"$enable_gtk2" && "$enable_gtk3" && {
+  echo 'GTK+ 2 and GTK+ 3 can not be both enabled' >&2
+  exit 1
+}
+gtk_cflags=
+gtk_ldflags=
+"$enable_gtk2" && {
+  gtk_cflags="`"$pkgconfig" --cflags gtk+-2.0`" || exit 1
+  gtk_ldflags="`"$pkgconfig" --libs gtk+-2.0`" || exit 1
+}
+"$enable_gtk3" && {
+  gtk_cflags="`"$pkgconfig" --cflags gtk+-3.0`" || exit 1
+  gtk_ldflags="`"$pkgconfig" --libs gtk+-3.0`" || exit 1
+}
+
+sedcond() {
+  local v
+  "$2" && v=1
+  printf '%s' "s,^\(ENABLE_$1 =\).*$,\1 $v,"
+}
+
+sedarg() {
+  printf '%s' "s,^\($1 =\).*$,\1 $2,"
+}
+
+sed Makefile.in \
+-e "`sedcond SYSTEMD "$enable_systemd"`" \
+-e "`sedcond OPENRC "$enable_openrc"`" \
+-e "`sedarg BINDIR "$bindir"`" \
+-e "`sedarg SYSCONFDIR "$sysconfdir"`" \
+-e "`sedarg DATADIR "$datadir"`" \
+-e "`sedarg RUNSTATEDIR "$runstatedir"`" \
+-e "`sedarg UNITDIR "$unitdir"`" \
+-e "`sedarg GTK_CFLAGS "$gtk_cflags"`" \
+-e "`sedarg GTK_LDFLAGS "$gtk_ldflags"`" \
+> Makefile || exit 1
+
+echo "Enable systemd: $enable_systemd"
+echo "Enable OpenRC: $enable_openrc"
+echo "Enable GTK+ 2: $enable_gtk2"
+echo "Enable GTK+ 3: $enable_gtk3"
+echo
+echo "bindir: $bindir"
+"$enable_openrc" &&
+echo "sysconfdir: $sysconfdir"
+echo "datadir: $datadir"
+echo "runstatedir: $runstatedir"
+"$enable_systemd" &&
+echo "unitdir: $unitdir"
+echo
