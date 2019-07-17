@@ -1,1 +1,3 @@
-charge-log
+charge-log-daemon
+charge-log-plot
+*.o
