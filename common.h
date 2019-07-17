@@ -6,7 +6,7 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-int read_energy(int * full, int * now);
+void read_energy(int * full, int * now);
 int get_time();
 
 #endif

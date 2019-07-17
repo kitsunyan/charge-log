@@ -37,7 +37,7 @@ static void plot_reload(struct plot_data_t * plot_data) {
 		gint last_time = -1;
 		gint time, full, now;
 		while (fscanf(file, "%d %d %d\n", &time, &full, &now) == 3) {
-			if (last_time < 0 || last_time + 10 < time) {
+			if (last_time < 0 || last_time + UPDATE_INTERVAL / 4 < time) {
 				if (capacity == 0) {
 					capacity = 2;
 					m = malloc(capacity * sizeof(m[0]));
@@ -86,7 +86,7 @@ static void plot_reload(struct plot_data_t * plot_data) {
 		}
 		for (i = 0; i < count; i++) {
 			gint first, last, td, pd;
-			gdouble energy = (gdouble) m[i].now / m[i].full;
+			gdouble energy = m[i].full > 0 ? (gdouble) m[i].now / m[i].full : 0;
 			plot_data->values[i].time = m[i].time;
 			plot_data->values[i].energy = energy > 1 ? 1 : energy < 0 ? 0 : energy;
 			first = i - step;
